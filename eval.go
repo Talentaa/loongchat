@@ -90,7 +90,7 @@ func sysCommandEval(sess *Session, text string) (cont bool) {
 		return
 	}
 	fmt.Fprintln(sess.out, out)
-	sess.Append(&Message{Role: User, Content: out})
+	sess.Append(&Message{Content: out})
 	return
 }
 
@@ -114,7 +114,7 @@ func builtinCommandEval(sess *Session, text string) (cont bool) {
 
 	text = strings.TrimSpace(builtins.Launch(args))
 	if text != "" {
-		sess.Append(&Message{Role: User, Content: text})
+		sess.Append(&Message{Content: text})
 		return true
 	}
 	return false

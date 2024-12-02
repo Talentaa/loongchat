@@ -201,7 +201,7 @@ func (s *Session) replay(records []*record) {
 	for _, r := range records {
 		args := strings.Fields(r.Op)
 		if r.Msg != nil {
-			args = append(args, "--role", string(r.Msg.Role), r.Msg.Content)
+			args = append(args, "--role", r.Msg.Content)
 		}
 		builtins.Launch(args)
 	}

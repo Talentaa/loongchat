@@ -169,7 +169,7 @@ func (m *messageManager) showCommand() (_ string) {
 			continue
 		}
 		if opts.Role {
-			out.WriteString(string(m.messages[index].Role) + ":\n\n")
+			out.WriteString(":\n\n")
 		}
 		out.WriteString(m.messages[index].Content + "\n\n")
 	}
@@ -187,7 +187,7 @@ func (m *messageManager) appendCommand() (_ string) {
 	}
 
 	if opts.Text != "" {
-		m.append(&Message{Role: ChatRole(opts.Role), Content: opts.Text})
+		m.append(&Message{Content: opts.Text})
 	}
 	return
 }

@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"io"
 	"net/http"
 	"strings"
 )
@@ -41,57 +40,24 @@ type Error struct {
 	Message string
 }
 
-type Chat[Q Question, A Answer, AC AnswerChunk] interface {
-	Ask(ctx context.Context, q Q) (A, error)
+type Chat[Q Question, AC AnswerChunk] interface {
 	Stream(ctx context.Context, q Q) (chan AC, error)
 }
 
-type QuestionAnswer[Q Question, A Answer, AC AnswerChunk] struct {
+type QuestionAnswer[Q Question, AC AnswerChunk] struct {
 	Question     Q
-	Answer       A
 	AnswerChunks []AC
 }
-type Client[Q Question, A Answer, AC AnswerChunk] struct {
-	cli    *http.Client
-	url    string
-	apikey string
+type Client[Q Question, AC AnswerChunk] struct {
+	cli *http.Client
+	url string
 }
 
-func New[Q Question, A Answer, AC AnswerChunk](cli *http.Client, url string, apikey string) *Client[Q, A, AC] {
-	return &Client[Q, A, AC]{cli: cli, url: url, apikey: apikey}
-}
-func (c *Client[Q, A, _]) Ask(ctx context.Context, q Q) (A, error) {
-	ans := newObj[A]()
-
-	data, err := json.Marshal(q)
-	if err != nil {
-		return ans, err
-	}
-
-	req, err := http.NewRequest(http.MethodPost, c.url, bytes.NewBuffer(data))
-	if err != nil {
-		return ans, err
-	}
-	req.Header.Add("Authorization", "Bearer "+c.apikey)
-	req.Header.Add("Content-Type", "application/json")
-
-	resp, err := c.cli.Do(req.WithContext(ctx))
-	if err != nil {
-		return ans, err
-	}
-	defer resp.Body.Close()
-
-	data, err = io.ReadAll(resp.Body)
-	if err != nil {
-		return ans, err
-	}
-	if err := json.Unmarshal(data, &ans); err != nil {
-		return ans, err
-	}
-	return ans, nil
+func New[Q Question, AC AnswerChunk](cli *http.Client, url string) *Client[Q, AC] {
+	return &Client[Q, AC]{cli: cli, url: url}
 }
 
-func (c *Client[Q, _, AC]) Stream(ctx context.Context, q Q) (chan AC, error) {
+func (c *Client[Q, AC]) Stream(ctx context.Context, q Q) (chan AC, error) {
 	ch := make(chan AC)
 	data, err := json.Marshal(q)
 	if err != nil {
@@ -102,7 +68,7 @@ func (c *Client[Q, _, AC]) Stream(ctx context.Context, q Q) (chan AC, error) {
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Add("Authorization", "Bearer "+c.apikey)
+
 	req.Header.Add("Content-Type", "application/json")
 
 	resp, err := c.cli.Do(req.WithContext(ctx))

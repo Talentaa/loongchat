@@ -87,7 +87,6 @@ func New(opts ...GuruOption) *Guru {
 
 type ChatCommandOptions struct {
 	ChatGPTOptions    `yaml:"chatgpt,omitempty"`
-	APIKey            string        `cortana:"--openai-api-key, -, -, set your openai api key" yaml:"openai-api-key,omitempty"`
 	Socks5            string        `cortana:"--socks5, -, , set the socks5 proxy" yaml:"socks5,omitempty"`
 	Timeout           time.Duration `cortana:"--timeout, -, 180s, the timeout duration for a request"  yaml:"timeout,omitempty"`
 	System            string        `cortana:"--system, -,, the optional system prompt for initializing the chatgpt" yaml:"system,omitempty"`
@@ -146,7 +145,7 @@ func (g *Guru) ChatCommand() {
 
 	// add the system and prompt message
 	if opts.System != "" {
-		sess.Append(&Message{Role: User, Content: opts.System}, opts.Pin)
+		sess.Append(&Message{Content: opts.System}, opts.Pin)
 	}
 	if opts.Prompt != "" {
 		p := ap.PromptText(opts.Prompt)
@@ -158,7 +157,7 @@ func (g *Guru) ChatCommand() {
 		if opts.Oneshot {
 			pin = true
 		}
-		sess.Append(&Message{Role: User, Content: p}, pin)
+		sess.Append(&Message{Content: p}, pin)
 	}
 
 	// read from stdin or file
@@ -181,7 +180,7 @@ func (g *Guru) ChatCommand() {
 		g.Fatalln(err)
 	}
 	if content != "" {
-		sess.Append(&Message{Role: User, Content: content}, opts.Pin)
+		sess.Append(&Message{Content: content}, opts.Pin)
 	}
 
 	if !readline.IsTerminal(int(os.Stdout.Fd())) {
@@ -246,7 +245,7 @@ func (g *Guru) ChatCommand() {
 		opts.Stdin || opts.Filename != "" {
 
 		text := strings.Join(opts.Texts, " ")
-		sess.Append(&Message{Role: User, Content: text}, opts.Pin)
+		sess.Append(&Message{Content: text}, opts.Pin)
 
 		// When in oneshot mode, the first talk should supply all
 		// the messages from system, stdin, prompts or text.
@@ -331,18 +330,17 @@ func (g *Guru) ConfigCommand() {
 	// interactive to create the config
 	if (opts.Init || os.IsNotExist(err)) &&
 		opts.Key == "" && opts.Value == "" {
-		// ask for openai-api-key and socks5
+		// ask for  socks5
 		vals, err := tui.Display[tui.Model[[]string], []string](context.Background(),
-			tui.NewConfigInputModel("openai-api-key (required)", "socks5 (if have)"))
+			tui.NewConfigInputModel("socks5 (if have)"))
 		if err != nil {
 			g.Fatalln(err)
 		}
-		if vals[0] == "" && vals[1] == "" {
+		if vals[0] == "" {
 			return
 		}
 		data, err := yaml.Marshal(ChatCommandOptions{
-			APIKey: vals[0],
-			Socks5: vals[1],
+			Socks5: vals[0],
 		})
 		if err != nil {
 			g.Fatalln(err)

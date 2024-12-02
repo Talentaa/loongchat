@@ -32,11 +32,6 @@ func (g *GuruInfo) infoCommand() string {
 			continue
 		}
 
-		if k == "openai-api-key" {
-			unsettable = append(unsettable, fmt.Sprint(fmt.Sprintf("%-30s", k),
-				g.g.errStyle.Render("sk-"+strings.Repeat("*", 48))))
-			continue
-		}
 		unsettable = append(unsettable, fmt.Sprint(fmt.Sprintf("%-30s", k),
 			g.g.errStyle.Render(fmt.Sprint(v))))
 	}

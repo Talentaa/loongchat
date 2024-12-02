@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"net/http"
@@ -25,14 +24,14 @@ type ChatOptions struct {
 }
 
 type ChatCommand struct {
-	c         chat.Chat[*Question, *Answer, *AnswerChunk]
+	c         chat.Chat[*Question, *AnswerChunk]
 	ap        *AwesomePrompts
 	sess      *Session
 	isVerbose bool
 }
 
 func NewChatCommand(sess *Session, ap *AwesomePrompts, httpCli *http.Client, opts *ChatCommandOptions) *ChatCommand {
-	c := NewChatGPTClient(httpCli, opts.APIKey, &opts.ChatGPTOptions)
+	c := NewChatGPTClient(httpCli, &opts.ChatGPTOptions)
 	return &ChatCommand{c: c, sess: sess, ap: ap, isVerbose: opts.Verbose}
 }
 
@@ -42,7 +41,7 @@ func (c *ChatCommand) Talk(opts *ChatOptions) (string, error) {
 	}
 
 	if opts.Text != "" {
-		c.sess.Append(&Message{Role: User, Content: opts.Text})
+		c.sess.Append(&Message{Content: opts.Text})
 	}
 
 	// return if there is nothing to ask
@@ -50,11 +49,7 @@ func (c *ChatCommand) Talk(opts *ChatOptions) (string, error) {
 		return "", nil
 	}
 
-	if opts.Stream {
-		return c.stream(context.Background(), opts)
-	} else {
-		return c.ask(context.Background(), opts)
-	}
+	return c.stream(context.Background(), opts)
 }
 func (c *ChatCommand) verbose(text string) {
 	if !c.isVerbose {
@@ -62,64 +57,15 @@ func (c *ChatCommand) verbose(text string) {
 	}
 	c.sess.out.Println(text)
 }
-func (c *ChatCommand) ask(ctx context.Context, opts *ChatOptions) (string, error) {
-	q := &Question{
-		ChatGPTOptions: opts.ChatGPTOptions,
-		Messages:       c.sess.Messages(),
-	}
-	ans, err := tui.Display[tui.Model[*Answer], *Answer](ctx,
-		tui.NewSpinnerModel("thinking...", func() (*Answer, error) {
-			return c.c.Ask(ctx, q)
-		}))
-	if err != nil {
-		return "", err
-	}
-
-	// maybe ctrl+c interrupted
-	if ans == nil {
-		return "", nil
-	}
-
-	if ans.Error.Message != "" {
-		return "", fmt.Errorf(ans.Error.Message)
-	}
-
-	out := bytes.NewBuffer(nil)
-	for _, choice := range ans.Choices {
-		content := strings.TrimSpace(choice.Message.Content)
-		out.WriteByte('\n')
-		out.WriteString(content)
-		out.WriteByte('\n')
-
-		c.sess.Append(choice.Message)
-	}
-
-	c.verbose("render the content")
-	text, err := tui.Display[tui.Model[string], string](ctx, tui.NewContentModel(out.String(), opts.Renderer))
-	if err != nil {
-		return "", err
-	}
-
-	// Print to output if the tui is not renderable
-	// in case the the stdout is not terminal
-	if !tui.IsRenderable() {
-		c.sess.out.Print(text)
-	}
-
-	if !opts.NonInteractive {
-		c.sess.out.Printf("Cost : prompt(%d) completion(%d) total(%d)",
-			ans.Usage.PromptTokens, ans.Usage.CompletionTokens, ans.Usage.TotalTokens)
-	}
-
-	return text, nil
-}
 
 func (c *ChatCommand) stream(ctx context.Context, opts *ChatOptions) (string, error) {
 retry:
 	q := &Question{
 		ChatGPTOptions: opts.ChatGPTOptions,
-		Messages:       c.sess.Messages(),
+		// Messages:       c.sess.Messages(),
+		Prompt: c.sess.Messages()[0].Content,
 	}
+
 	// issue a request to the api
 	s, err := tui.Display[tui.Model[chan *AnswerChunk], chan *AnswerChunk](ctx,
 		tui.NewSpinnerModel("", func() (chan *AnswerChunk, error) {
@@ -139,10 +85,7 @@ retry:
 		if event.Error.Message != "" {
 			return "", fmt.Errorf("%s: %s", event.Error.Code, event.Error.Message)
 		}
-		if len(event.Choices) == 0 {
-			return "", nil
-		}
-		return event.Choices[0].Delta.Content, nil
+		return event.Content, nil
 	}))
 
 	// The token limit exceeded. auto shrink and retry if enabled
@@ -177,7 +120,7 @@ retry:
 		c.sess.out.Print(content)
 	}
 	// append the response
-	c.sess.Append(&Message{Role: Assistant, Content: content})
+	c.sess.Append(&Message{Content: content})
 
 	return content, nil
 }

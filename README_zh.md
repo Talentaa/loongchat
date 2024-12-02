@@ -37,18 +37,6 @@ Guru 的含义是一个受人尊敬的导师、顾问或精神领袖，通常在
 go install github.com/shafreeck/guru@latest
 ```
 
-### 获取 OpenAI API Key
-
-Guru 使用 OpenAI 的开放接口与 ChatGPT 交互，因此不受 Web 端体验产品屏蔽的影响，被官方的 Web 应用屏蔽了没有关系，登陆其开发平台，获取对应的 API Key 即可。
-
-https://platform.openai.com/account/api-keys
-
-需要注意的是，调用 OpenAI 接口是收费的，新注册的账户默认有 5 美元可用，由于 ChatGPT 的接口非常便宜，5 美元可以用很长时间了（在我频繁调试的情况下，目前一共用了 2.4 美元）。如果你的账户注册的稍微早一点，默认就有 18 美元可用。大家可以登陆自行查看一下自己的账户余额 ：
-
-https://platform.openai.com/account/usage
-
-PS：赠送的账户余额是有期限的，能用就赶紧用哈。
-
 ### 配置 Guru 
 
 为了便于大家使用，特定添加了交互式配置的功能，Guru 会默认从配置文件和命令行参数来获取需要的参数，如果没有配置的话，也可以通过命令行参数直接指定。由于 API Key 的私密性，还是建议将其写到配置文件。
@@ -232,7 +220,6 @@ guru > :act as Linux Terminal
 ```
 dir                           /Users/shafreeck/.guru
 filename
-openai-api-key                sk-************************************************
 pin                           false
 prompt
 session-id                    chat-1680879639912-1ec4e509-af5b-4abb-9f4b-bebde2276d96
@@ -242,13 +229,7 @@ timeout                       3m0s
 ------------------------------
 chatgpt.frequency_penalty     0
 chatgpt.max_tokens            0
-chatgpt.model                 gpt-3.5-turbo
-chatgpt.n                     1
 chatgpt.presence_penalty      0
-chatgpt.stop
-chatgpt.stream                true
-chatgpt.temperature           1
-chatgpt.top_p                 1
 chatgpt.user
 disable-auto-shrink           false
 executor
@@ -259,9 +240,6 @@ system
 verbose                       false
 ```
 
-```
-:set chatgpt.temperature 1.5
-```
 
 ### 执行器
 
