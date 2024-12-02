@@ -14,7 +14,6 @@ import (
 	"time"
 
 	"github.com/charmbracelet/lipgloss"
-	"github.com/google/uuid"
 	"github.com/shafreeck/guru/tui"
 )
 
@@ -103,7 +102,7 @@ func (s *Session) Open(sid string) error {
 	if s.sid == "" {
 		// open a new session
 		now := time.Now()
-		s.sid = fmt.Sprintf("chat-%d-%s", now.UnixMilli(), uuid.New())
+		s.sid = fmt.Sprintf("temporary-chat-%d", now.UnixMilli())
 	} else {
 		// load the session
 		if err := s.load(); err != nil {

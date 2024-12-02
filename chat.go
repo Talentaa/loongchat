@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"sync"
 
 	"github.com/shafreeck/guru/chat"
 	"github.com/shafreeck/guru/tui"
@@ -61,9 +62,10 @@ func (c *ChatCommand) verbose(text string) {
 func (c *ChatCommand) stream(ctx context.Context, opts *ChatOptions) (string, error) {
 retry:
 	q := &Question{
-		ChatGPTOptions: opts.ChatGPTOptions,
+		// ChatGPTOptions: opts.ChatGPTOptions,
 		// Messages:       c.sess.Messages(),
-		Prompt: c.sess.Messages()[0].Content,
+		ConversationId: c.sess.sid,
+		Prompt: c.sess.Messages()[len(c.sess.Messages())-1].Content,
 	}
 
 	// issue a request to the api
@@ -82,9 +84,16 @@ retry:
 	// handle the stream and print the delta text, the whole
 	// content is returned when finished
 	content, err := tui.Display[tui.Model[string], string](ctx, tui.NewStreamModel(s, opts.Renderer, func(event *AnswerChunk) (string, error) {
-		if event.Error.Message != "" {
-			return "", fmt.Errorf("%s: %s", event.Error.Code, event.Error.Message)
-		}
+		// if event.Error.Message != "" {
+		// 	return "", fmt.Errorf("%s: %s", event.Error.Code, event.Error.Message)
+		// }
+		var once *sync.Once = new(sync.Once)
+		once.Do(func() {
+			if strings.HasPrefix(c.sess.sid, "temporary-chat") {
+				c.sess.sid = event.ConversationId
+
+			}
+		})
 		return event.Content, nil
 	}))
 

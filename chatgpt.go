@@ -13,7 +13,8 @@ type Message struct {
 }
 
 type Question struct {
-	ChatGPTOptions
+	// ChatGPTOptions
+	ConversationId string `json:"conversation_id"`
 	// Messages []*Message `json:"messages"`
 	Prompt string `json:"prompt"`
 }
@@ -47,11 +48,10 @@ type AnswerChunk struct {
 	// 	FinishReason string `json:"finish_reason"`
 	// 	Index        int    `json:"index"`
 	// } `json:"choices"`
-	IsEnd          bool        `json:"isEnd"`
-	Content        string      `json:"content"`
-	ConversationId string      `json:"conversation_id"`
-	MessageId      string      `json:"message_id"`
-	Error          AnswerError `json:"error"`
+	IsEnd          bool   `json:"isEnd"`
+	Content        string `json:"content"`
+	ConversationId string `json:"conversation_id"`
+	MessageId      string `json:"message_id"`
 }
 
 func (ac *AnswerChunk) New() any {
@@ -59,10 +59,6 @@ func (ac *AnswerChunk) New() any {
 }
 func (ac *AnswerChunk) Unmarshal(data []byte) error {
 	return json.Unmarshal(data, ac)
-}
-func (ac *AnswerChunk) SetError(err error) {
-	ac.Error.Type = "guru_inner_error"
-	ac.Error.Message = err.Error()
 }
 
 type ChatGPTOptions struct {
@@ -73,7 +69,7 @@ type ChatGPTOptions struct {
 	// User             string  `yaml:"user,omitempty" json:"user,omitempty" cortana:"--chatgpt.user, -, , A unique identifier representing your end-user, which can help OpenAI to monitor and detect abuse."`
 }
 
-const ChatGPTAPIURL = "http://lbrowser-admin.loongnix.cn/api/admin/lbrowser/open/chat"
+const ChatGPTAPIURL = "https://lbrowser-admin.loongnix.cn/api/admin/lbrowser/open/chat"
 
 type ChatGPTClient struct {
 	opts *ChatGPTOptions

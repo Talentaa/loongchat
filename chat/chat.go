@@ -16,23 +16,15 @@ type Question interface {
 	Newer
 	Marshal() ([]byte, error)
 }
-type Answer interface {
-	Newer
-	Unmarshal([]byte) error
-}
+
 type AnswerChunk interface {
 	New() any
 	Unmarshal([]byte) error
-	SetError(err error)
 }
 
 func newObj[T Newer]() T {
 	var t T
 	return t.New().(T)
-}
-
-type AnswerChunks[A Answer] interface {
-	Combine() A
 }
 
 type Error struct {
@@ -44,10 +36,6 @@ type Chat[Q Question, AC AnswerChunk] interface {
 	Stream(ctx context.Context, q Q) (chan AC, error)
 }
 
-type QuestionAnswer[Q Question, AC AnswerChunk] struct {
-	Question     Q
-	AnswerChunks []AC
-}
 type Client[Q Question, AC AnswerChunk] struct {
 	cli *http.Client
 	url string
@@ -101,7 +89,7 @@ func (c *Client[Q, AC]) Stream(ctx context.Context, q Q) (chan AC, error) {
 			text := line[len(prefix):]
 
 			if err := json.Unmarshal([]byte(text), ansc); err != nil {
-				ansc.SetError(err)
+				return
 			}
 
 			select {
@@ -117,7 +105,7 @@ func (c *Client[Q, AC]) Stream(ctx context.Context, q Q) (chan AC, error) {
 		// send the error message
 		ansc := newObj[AC]()
 		if err := json.Unmarshal(errbuf.Bytes(), ansc); err != nil {
-			ansc.SetError(err)
+			return
 		}
 		select {
 		case <-ctx.Done():
